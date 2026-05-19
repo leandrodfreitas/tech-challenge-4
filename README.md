@@ -60,11 +60,75 @@ npm start
 
 ## Exemplos de código
 
-### Consultando saldo
+### Firebase - regras de segurança - limites de requisições, logs e bloqueios por padrão
 
 ```javascript
 
-Exibir códigos aqui
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isValidTransaction() {
+      let data = request.resource.data;
+      return 'amount' in data && data.amount is number
+        && 'category' in data && data.category is string
+        && 'description' in data && data.description is string
+        && 'type' in data && data.type in ['income', 'expense']
+        && 'date' in data && data.date is timestamp
+        && 'userId' in data && data.userId is string
+        && data.amount > 0
+        && data.amount <= 999999.99
+        && data.category.size() > 0 && data.category.size() <= 100
+        && data.description.size() > 0 && data.description.size() <= 500;
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+
+      
+      allow create: if isAuthenticated() 
+                    && isOwner(request.resource.data.userId) 
+                    && isValidTransaction()
+                    && !('createdAt' in request.resource.data)
+                    && !('updatedAt' in request.resource.data);
+
+      
+     allow update: if isAuthenticated() 
+              && isOwner(resource.data.userId)
+              && request.resource.data.userId == resource.data.userId;
+              
+              
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+    
+    match /users/{userId} {
+      allow read: if isAuthenticated() && isOwner(userId);
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if false;
+    }
+    
+    match /rateLimits/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+    
+    match /auditLogs/{log} {
+      allow read, write: if false;
+    }
+    
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
 
 ```
 
