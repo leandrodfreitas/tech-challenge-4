@@ -25,7 +25,6 @@ O **Bytebank** é uma aplicação financeira mobile que permite gerenciar suas f
 
 - [Node.js](https://nodejs.org/) >= 18
 - [React Native CLI](https://reactnative.dev/docs/environment-setup)
-- Android Studio ou Xcode (para emulador)
 
 ### Passos
 
@@ -40,26 +39,12 @@ cd tech-challenge-4
 
 ```bash
 npm install
-# ou
-yarn install
 ```
 
 4. Iniciar:
 
 ```bash
 npm start
-# ou
-yarn start
-```
-
-5. Rode o app:
-
-```bash
-# Android
-npm run android
-
-# iOS
-npm run ios
 ```
 
 ---
@@ -95,4 +80,4 @@ Exibir códigos aqui
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está sob a licença MIT.
