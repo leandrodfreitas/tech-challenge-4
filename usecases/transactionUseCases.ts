@@ -13,6 +13,16 @@ import {
 const transactionLimiter = new RateLimiter(100, 60000);
 const uploadLimiter = new RateLimiter(20, 60000);
 
+const EXTENSION_TO_MIME: { [key: string]: string } = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  webp: "image/webp",
+  pdf: "application/pdf",
+  heic: "image/heic",
+};
+
 export const transactionUseCases = {
   async add(
     userId: string,
@@ -92,15 +102,25 @@ export const transactionUseCases = {
   async remove(transactionId: string, userId: string): Promise<void> {
     if (!userId) throw new Error("Usuário não autenticado");
 
+    console.log("🗑️ [REMOVE] INICIANDO EXCLUSÃO:", { transactionId, userId });
+
     if (!transactionLimiter.isAllowed(`tx_delete_${userId}`)) {
       securityLogger.suspiciousActivity(
         userId,
         "Excesso de tentativas de deletar transação",
       );
+      console.warn("🚨 [REMOVE] Bloqueado pelo Rate Limiter");
       throw new Error("Muitas requisições. Tente novamente em alguns segundos");
     }
 
-    return transactionRepository.remove(transactionId, userId);
+    try {
+      console.log("📡 [REMOVE] Chamando transactionRepository.remove...");
+      await transactionRepository.remove(transactionId, userId);
+      console.log("✅ [REMOVE] Excluído com sucesso do repositório!");
+    } catch (error) {
+      console.error("❌ [REMOVE] Erro dentro do transactionRepository:", error);
+      throw error;
+    }
   },
 
   async getById(transactionId: string): Promise<Transaction | null> {
@@ -131,10 +151,19 @@ export const transactionUseCases = {
       throw new Error("Muitos uploads. Tente novamente em alguns segundos");
     }
 
+    // Atenção no futuro: file.uri.length mede apenas os caracteres do caminho (ex: 50 caracteres)
+    // Para medir o tamanho real do arquivo, você precisará capturar a propriedade 'size' (em bytes)
+    // que o ImagePicker retorna.
     if (!validateFileSize(file.uri.length, 5 * 1024 * 1024)) {
       securityLogger.invalidFile(userId, file.name, "Arquivo muito grande");
       throw new Error("Arquivo excede 5MB");
     }
+
+    // Extrai a extensão do nome (ex: "1000147177.jpg" -> "jpg")
+    const extension = file.name.split(".").pop()?.toLowerCase() || "";
+
+    // Tenta usar a nossa tabela. Se não achar, usa o type original que veio do celular
+    const detectedMime = EXTENSION_TO_MIME[extension] || file.type;
 
     const allowedTypes = [
       "image/jpeg",
@@ -145,16 +174,22 @@ export const transactionUseCases = {
       "image/heic",
     ];
 
-    if (!allowedTypes.includes(file.type)) {
-      securityLogger.invalidFile(userId, file.name, "Tipo MIME inválido");
+    if (!allowedTypes.includes(detectedMime)) {
+      securityLogger.invalidFile(
+        userId,
+        file.name,
+        `Tipo MIME inválido. Detectado: ${detectedMime} | Original: ${file.type}`,
+      );
       throw new Error("Tipo de arquivo não permitido");
     }
 
     const sanitizedName = sanitizeFilename(file.name);
 
+    // Fazemos o upload sobrescrevendo a propriedade 'type' com o MIME detectado com segurança
     const { downloadUrl } = await storageRepository.upload(userId, {
       ...file,
       name: sanitizedName,
+      type: detectedMime,
     });
 
     return downloadUrl;
