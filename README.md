@@ -74,7 +74,7 @@ npm start
 - useEffect unificado - era 2 duplicados, agora é 1.
 - Atualização otimista - UI responde instantaneamente.
 - usePaginatedTransactions - paginação isolada e reutilizável.
-- Pré-carrega recursos críticos (fontes, imagens, sessão) em paralelo.
+- Pré-carrega os recursos críticos (fontes, imagens, sessão) em paralelo.
 
 ### Segurança 
 
