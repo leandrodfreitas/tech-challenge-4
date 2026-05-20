@@ -9,7 +9,7 @@
 - [Sobre](#sobre)
 - [Instalação](#instalação)
 - [Como usar](#como-usar)
-- [Exemplos de código](#exemplos-de-código)
+- [Melhorias aplicadas](#melhorias-aplicadas)
 
 ---
 
@@ -58,79 +58,29 @@ npm start
 
 ---
 
-## Exemplos de código
+## Melhorias aplicadas
 
-### Firebase - regras de segurança.
+### Cache
 
-```javascript
+- Cache persistente: dados salvos no disco entre sessões.
+- Leituras repetidas vêm do cache (sem custo no Firebase).
+- App funciona offline com os dados já carregados.
+- Sincroniza automaticamente quando a conexão voltar.
 
-rules_version = '2';
+### Performance 
+ 
+- useCallback em todas as funções — evita re-renders em cascata
+- useMemo para summary — não recalcula a cada render
+- useEffect unificado — era 2 duplicados, agora é 1
+- Atualização otimista — UI responde instantaneamente
+- usePaginatedTransactions — paginação isolada e reutilizável
 
-service cloud.firestore {
-  match /databases/{database}/documents {
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    function isValidTransaction() {
-      let data = request.resource.data;
-      return 'amount' in data && data.amount is number
-        && 'category' in data && data.category is string
-        && 'description' in data && data.description is string
-        && 'type' in data && data.type in ['income', 'expense']
-        && 'date' in data && data.date is timestamp
-        && 'userId' in data && data.userId is string
-        && data.amount > 0
-        && data.amount <= 999999.99
-        && data.category.size() > 0 && data.category.size() <= 100
-        && data.description.size() > 0 && data.description.size() <= 500;
-    }
+### Segurança 
 
-    match /transactions/{transactionId} {
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
-
-      
-      allow create: if isAuthenticated() 
-                    && isOwner(request.resource.data.userId) 
-                    && isValidTransaction()
-                    && !('createdAt' in request.resource.data)
-                    && !('updatedAt' in request.resource.data);
-
-      
-     allow update: if isAuthenticated() 
-              && isOwner(resource.data.userId)
-              && request.resource.data.userId == resource.data.userId;
-              
-              
-      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
-    }
-    
-    match /users/{userId} {
-      allow read: if isAuthenticated() && isOwner(userId);
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAuthenticated() && isOwner(userId);
-      allow delete: if false;
-    }
-    
-    match /rateLimits/{userId} {
-      allow read, write: if isAuthenticated() && isOwner(userId);
-    }
-    
-    match /auditLogs/{log} {
-      allow read, write: if false;
-    }
-    
-    match /{document=**} {
-      allow read, write: if false;
-    }
-  }
-}
-
-```
+- Consistência estrita de dados na escrita.
+- Limitação de taxa de requisições (Rate Limiting).
+- Trilha de auditoria completa via logs estruturados.
+- Políticas de acesso baseadas em Bloqueio por Padrão (Default-Deny).
 
 ---
 
