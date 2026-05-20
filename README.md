@@ -69,11 +69,11 @@ npm start
 
 ### Performance 
  
-- useCallback em todas as funções — evita re-renders em cascata
-- useMemo para summary — não recalcula a cada render
-- useEffect unificado — era 2 duplicados, agora é 1
-- Atualização otimista — UI responde instantaneamente
-- usePaginatedTransactions — paginação isolada e reutilizável
+- useCallback em todas as funções - evita re-renders em cascata.
+- useMemo para summary - não recalcula a cada render.
+- useEffect unificado - era 2 duplicados, agora é 1.
+- Atualização otimista - UI responde instantaneamente.
+- usePaginatedTransactions - paginação isolada e reutilizável.
 
 ### Segurança 
 
