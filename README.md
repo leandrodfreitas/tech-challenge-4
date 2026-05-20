@@ -60,7 +60,7 @@ npm start
 
 ## Exemplos de código
 
-### Firebase - regras de segurança - limites de requisições, logs e bloqueios por padrão
+### Firebase - regras de segurança.
 
 ```javascript
 
