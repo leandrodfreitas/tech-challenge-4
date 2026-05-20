@@ -1,10 +1,10 @@
+import { db } from "@/firebase/config";
 import { Transaction, TransactionFilter } from "@/types";
 import {
   addDoc,
   collection,
   deleteDoc,
   doc,
-  getDocs,
   getDocFromCache,
   getDocFromServer,
   getDocsFromCache,
@@ -18,7 +18,6 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { db } from "@/firebase/config";
 
 // ─── Helper de conversão ────────────────
 
@@ -39,13 +38,17 @@ export const transactionRepository = {
     userId: string,
     data: Omit<Transaction, "id" | "createdAt" | "updatedAt">,
   ): Promise<Transaction> {
+    console.log("🔍 DEBUG ADD:", {
+      userId,
+      data,
+      dataKeys: Object.keys(data),
+    });
+
     // Escrita sempre vai ao servidor
     const docRef = await addDoc(collection(db, "transactions"), {
       ...data,
       userId,
       date: Timestamp.fromDate(new Date(data.date)),
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
     });
 
     return {
@@ -72,13 +75,15 @@ export const transactionRepository = {
     }
 
     if (!snap.exists()) throw new Error("Transação não encontrada");
-    if (snap.data().userId !== userId) throw new Error("Sem permissão para editar esta transação");
+    if (snap.data().userId !== userId)
+      throw new Error("Sem permissão para editar esta transação");
 
     // Escrita sempre vai ao servidor
     await updateDoc(ref, {
       ...updates,
-      date: updates.date ? Timestamp.fromDate(new Date(updates.date)) : undefined,
-      updatedAt: Timestamp.now(),
+      date: updates.date
+        ? Timestamp.fromDate(new Date(updates.date))
+        : undefined,
     });
   },
 
@@ -94,7 +99,8 @@ export const transactionRepository = {
     }
 
     if (!snap.exists()) throw new Error("Transação não encontrada");
-    if (snap.data().userId !== userId) throw new Error("Sem permissão para deletar esta transação");
+    if (snap.data().userId !== userId)
+      throw new Error("Sem permissão para deletar esta transação");
 
     // Escrita sempre vai ao servidor
     await deleteDoc(ref);
@@ -127,10 +133,14 @@ export const transactionRepository = {
     const constraints: QueryConstraint[] = [where("userId", "==", userId)];
 
     if (filter?.startDate) {
-      constraints.push(where("date", ">=", Timestamp.fromDate(new Date(filter.startDate))));
+      constraints.push(
+        where("date", ">=", Timestamp.fromDate(new Date(filter.startDate))),
+      );
     }
     if (filter?.endDate) {
-      constraints.push(where("date", "<=", Timestamp.fromDate(new Date(filter.endDate))));
+      constraints.push(
+        where("date", "<=", Timestamp.fromDate(new Date(filter.endDate))),
+      );
     }
     if (filter?.type) {
       constraints.push(where("type", "==", filter.type));
